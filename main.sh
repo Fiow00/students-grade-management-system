@@ -1,18 +1,10 @@
 #!/bin/bash
 
-trap 'echo " Use q to exit."' INT
+source modules/students.sh
+source modules/subjects.sh
+source modules/grades.sh
 
-manage_students() {
-    echo "Manage students is chosen"
-}
-
-manage_subjects() {
-    echo "Manage subjects is chosen"
-}
-
-manage_grades() {
-    echo "Manage grades is chosen"
-}
+trap 'echo -e "\nUse q to exit."' INT
 
 while true
 do
@@ -26,13 +18,23 @@ do
     echo "q) Exit"
     echo ""
 
-    read -p "Enter your selection: " answer
+    read -r -p "Enter your selection: " choice
 
-    case "$answer" in
-        1) manage_students ;;
-        2) manage_subjects ;;
-        3) manage_grades ;;
-        q) echo "Exiting..."; exit 0 ;;
+    case "$choice" in
+        1) 
+            echo "Opening Students Module..."
+            sleep 0.5
+            manage_students ;;
+        2) 
+            echo "Opening Subjects Module..."
+            sleep 0.5
+            manage_subjects ;;
+        3) 
+            echo "Opening Grades Module..."
+            sleep 0.5
+            manage_grades ;;
+        q) echo "Exiting..."; sleep 0.5; exit 0 ;;
+        "") echo "Please enter a choice!" ;;
         *) echo "Invalid choice!" ;;
     esac
 
