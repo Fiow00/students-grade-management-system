@@ -144,3 +144,100 @@ list_students() {
         done
     } | column -t -s '|'
 }
+
+update_student() {
+    clear
+    echo "=========================="
+    echo " Update Student "
+    echo "=========================="
+
+    local student_id
+
+    read -r -p "Enter Student ID: " student_id
+
+    local file="$STUDENTS_DIR/${student_id}.stu"
+
+    if [[ ! -f "$file" ]]
+    then
+        echo "Error: Student not found!"
+        return
+    fi
+
+    echo ""
+    echo "Current Data:"
+    cat "$file"
+
+    echo ""
+    echo "What do you want to update?"
+    echo "1) Name"
+    echo "2) Email"
+    echo "3) Year"
+    echo "b) Back"
+
+    read -r -p "Enter your choice: " choice
+
+    case "$choice" in
+        1)
+            local new_name
+            while true
+            do
+                read -r -p "Enter new name: " new_name
+                if [[ -z "$new_name" ]]
+                then
+                    echo "Error: Name cannot be empty"
+                elif [[ ! "$new_name" =~ ^[a-zA-Z[:space:]]+$ ]]
+                then
+                    echo "Error: Name must contain letters only"
+                else
+                    break
+                fi
+            done
+
+            sed -i "s/^NAME=.*/NAME=$new_name/" "$file"
+            echo "Name updated successfully!" ;;
+        
+        2)
+            local new_email
+            while true
+            do
+                read -r -p "Enter new email: " new_email
+                if [[ "$new_email" =~ ^[^@]+@[^@]+\.[^@]+$ ]]
+                then
+                    if grep -qri "^Email=${new_email}$" "$STUDENTS_DIR"
+                    then
+                        echo "Error: Email already exists."
+                    else
+                        break
+                    fi
+                else
+                    echo "Invalid email format."
+                fi
+            done
+
+            sed -i "s/^EMAIL=.*/EMAIL=$new_email/" "$file"
+            echo "Email updated successfully!" ;;
+        
+        3)
+            local new_year
+
+            while true
+            do
+                read -r -p "Enter new year (1-6): " new_year
+                if [[ "$new_year" =~ ^[1-6]$ ]]
+                then
+                    break
+                else
+                    echo "Error: Academic year must be an integer between 1 and 6."
+                fi
+            done
+
+            sed -i "s/^YEAR=.*/YEAR=$new_year/" "$file"
+            echo "Year updated successfully!" ;;
+
+        b)
+            return ;;
+
+        *)
+            echo "Invalid choice!" ;;
+    esac
+}
