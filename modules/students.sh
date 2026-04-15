@@ -1,3 +1,12 @@
+# =========================================
+# Students Module
+# Handles all student-related operations:
+# - Add
+# - List
+# - Update
+# - Delete
+# =========================================
+
 manage_students() {
     while true
     do
@@ -237,6 +246,43 @@ update_student() {
         b)
             return ;;
 
+        *)
+            echo "Invalid choice!" ;;
+    esac
+}
+
+
+delete_student() {
+    clear
+    echo "=========================="
+    echo " Delete Student "
+    echo "=========================="
+
+    local student_id
+
+    read -r -p "Enter Student ID: " student_id
+
+    local file="$STUDENTS_DIR/${student_id}.stu"
+
+    if [[ ! -f "$file" ]]
+    then
+        echo "Error: Student not found!"
+        return
+    fi
+
+    echo ""
+    echo "Student Data:"
+    cat "$file"
+
+    echo ""
+    read -r -p "Are you sure you want to delete this student? (y/n): " confirm
+
+    case "$confirm" in
+        y|Y)
+            rm "$file"
+            echo "Student deleted successfully!" ;;
+        n|N)
+            echo "Operation cancelled." ;;
         *)
             echo "Invalid choice!" ;;
     esac
