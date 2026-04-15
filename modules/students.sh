@@ -79,7 +79,7 @@ add_student() {
         read -r -p "Enter student email: " student_email
         if [[ "$student_email" =~ ^[^@]+@[^@]+\.[^@]+$ ]]
         then
-            if grep -qri "^${student_email}$" "$STUDENTS_DIR"
+            if grep -qri "^EMAIL=${student_email}$" "$STUDENTS_DIR"
             then
                 echo "Error: Email '$student_email' is already in use."
             else
@@ -103,12 +103,44 @@ add_student() {
     done
 
     {
-        echo "$student_id"
-        echo "$student_name"
-        echo "$student_email"
-        echo "$student_year"
+        echo "ID=$student_id"
+        echo "NAME=$student_name"
+        echo "EMAIL=$student_email"
+        echo "YEAR=$student_year"
     } > "$STUDENTS_DIR/${student_id}.stu"
 
     echo ""
     echo "Student '$student_name' (ID: $student_id) added successfully!"
+}
+
+
+list_students() {
+    clear
+    echo "===================================="
+    echo " List Students "
+    echo "===================================="
+
+    if [[ -z "$(ls -A "$STUDENTS_DIR")" ]]
+    then
+        echo "No students found."
+        return
+    fi
+
+    {
+        echo "ID|Name|Email|Year"
+
+        for student in "$STUDENTS_DIR"/*.stu
+        do
+            awk -F= '
+                /^ID=/    {id=$2}
+                /^NAME=/  {name=$2}
+                /^EMAIL=/ {email=$2}
+                /^YEAR=/  {year=$2}
+            
+                END {
+                    print id "|" name "|" email "|" year
+                }
+            ' "$student"
+        done
+    } | column -t -s '|'
 }
