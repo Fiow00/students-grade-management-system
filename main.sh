@@ -1,10 +1,16 @@
 #!/bin/bash
 
-source modules/students.sh
-source modules/subjects.sh
-source modules/grades.sh
+DATA_DIR="sgms_data"
+STUDENTS_DIR="$DATA_DIR/students"
+SUBJECTS_DIR="$DATA_DIR/subjects"
+GRADES_DIR="$DATA_DIR/grades"
 
-trap 'echo -e "\nUse q to exit."' INT
+mkdir -p "$STUDENTS_DIR" "$SUBJECTS_DIR" "$GRADES_DIR"
+
+source modules/students.sh || { echo "Error loading students module"; exit 1; }
+source modules/subjects.sh || { echo "Error loading subjects module"; exit 1; }
+source modules/grades.sh || { echo "Error loading grades module"; exit 1; }
+source modules/reports.sh || { echo "Error loading reports module"; exit 1; }
 
 while true
 do
@@ -15,6 +21,7 @@ do
     echo "1) Manage Students"
     echo "2) Manage Subjects"
     echo "3) Manage Grades"
+    echo "4) Reports & Statistics"
     echo "q) Exit"
     echo ""
 
@@ -33,6 +40,10 @@ do
             echo "Opening Grades Module..."
             sleep 0.5
             manage_grades ;;
+        4)
+            echo "Opening Reports..."
+            sleep 0.5
+            manage_reports ;;
         q) echo "Exiting..."; sleep 0.5; exit 0 ;;
         "") echo "Please enter a choice!" ;;
         *) echo "Invalid choice!" ;;
