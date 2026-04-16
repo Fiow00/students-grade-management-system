@@ -98,3 +98,34 @@ add_subject() {
     echo "Subject '$subject_name' ($subject_code) added successfully!"
 
 }
+
+
+list_subjects() {
+    clear
+    echo "============================"
+    echo "      List Subjects         "
+    echo "============================"
+
+    if [[ -z "$(ls -A "$SUBJECTS_DIR")" ]]
+    then
+        echo "No subjects found."
+        return
+    fi
+
+    {
+        echo "Code|Name|Credits"
+
+        for subject in "$SUBJECTS_DIR"/*.sub
+        do
+            awk -F= '
+                /^CODE=/    {code=$2}
+                /^NAME=/    {name=$2}
+                /^CREDITS=/ {credits=$2}
+
+                END {
+                    print code "|" name "|" credits
+                }
+            ' "$subject"
+        done
+    } | column -t -s '|'
+}
