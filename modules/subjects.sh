@@ -235,7 +235,7 @@ delete_subject() {
     do
         read -r -p "Enter Subject Code: " subject_code
 
-        if [[ if "$SUBJECTS_DIR/${subject_code}.sub" ]]
+        if [[ -f "$SUBJECTS_DIR/${subject_code}.sub" ]]
         then
             break
         else
@@ -270,7 +270,7 @@ delete_subject() {
             y|Y)
                 rm "$file"
 
-                if [[ if "$GRADES_DIR/${subject_code}.grd" ]]
+                if [[ -f "$GRADES_DIR/${subject_code}.grd" ]]
                 then
                     rm "$GRADES_DIR/${subject_code}.grd"
                     echo "Related grade file also deleted."
