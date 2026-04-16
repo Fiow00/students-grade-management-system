@@ -129,3 +129,162 @@ list_subjects() {
         done
     } | column -t -s '|'
 }
+
+
+update_subject() {
+    clear
+    echo "==========================="
+    echo " Update Subject "
+    echo "==========================="
+
+    local subject_code
+
+    while true
+    do
+        read -r -p "Enter Subject Code: " subject_code
+
+        if [[ -f "$SUBJECTS_DIR/${subject_code}.sub" ]]
+        then
+            break
+        else
+            echo "Error: Subject code '$subject_code' not found."
+        fi
+    done
+
+    local file="$SUBJECTS_DIR/${subject_code}.sub"
+
+    echo ""
+    echo "Current Data: "
+    awk -F= '
+        /^CODE=/{
+            print "Code    : " $2
+        }
+        /^NAME=/{
+            print "Name    : " $2
+        }
+        /^CREDITS=/{
+            print "Dredits : " $2
+        }
+    ' "$file"
+
+    echo ""
+    echo "What do you want to update? "
+    echo "1) Name"
+    echo "2) Credits"
+    echo "b) Back"
+
+    read -r -p "Enter your choice: " choice
+
+    case "$choice" in
+        1)
+            local new_name
+
+            while true
+            do
+                read -r -p "Enter new name: " new_name
+
+                if [[ -z "$new_name" ]]
+                then
+                    echo "Error: Name cannot be empty."
+                elif [[ ! "$new_name" =~ ^[a-zA-Z[:space:]]+$ ]]
+                then
+                    echo "Error: Name must contains letters only."
+                else
+                    break
+                fi
+            done
+
+            sed -i "s/^NAME=.*/NAME=$new_name/" "file"
+            echo "Name updated successfully!" ;;
+        
+        2)
+            local new_credits
+            while true
+            do
+                read -r -p "Enter new credit hours (1-6): " new_credits
+
+                if [[ "$new_credits" =~ ^[1-6]$ ]]
+                then
+                    break
+                else
+                    echo "Error: Credit hours must be an integer between 1 and 6."
+                fi
+            done
+
+            sed -i "s/^CREDITS=.*/CREDITS=$new_credits/" "$file"
+            echo "Credits updated successfully!" ;;
+
+        b)
+            return ;;
+
+        *)
+            echo "Invalid choice!" ;;
+    esac
+
+}
+
+delete_subject() {
+    clear
+    echo "============================"
+    echo " Delete Subject "
+    echo "============================"
+
+    local subject_code
+
+    while true
+    do
+        read -r -p "Enter Subject Code: " subject_code
+
+        if [[ if "$SUBJECTS_DIR/${subject_code}.sub" ]]
+        then
+            break
+        else
+            echo "Error: Subject code '$subject_code' not found."
+        fi
+    done
+
+    local file="$SUBJECTS_DIR/${subject_code}.sub"
+
+    echo ""
+    echo "Subject Data: "
+    awk -F= '
+        /^CODE=/{
+            print "Code    : " $2
+        }
+        /^NAME=/{
+            print "Name    : " $2
+        }
+        /^CREDITS=/{
+            print "Credits : " $2
+        }
+    ' "$file"
+
+    echo ""
+
+    local confirm
+
+    while true
+    do
+        read -r -p "Are you sure you want to delete this subject? (y/n): " confirm
+        case "$confirm" in
+            y|Y)
+                rm "$file"
+
+                if [[ if "$GRADES_DIR/${subject_code}.grd" ]]
+                then
+                    rm "$GRADES_DIR/${subject_code}.grd"
+                    echo "Related grade file also deleted."
+                fi
+                echo "Subject deleted successfully!"
+                return ;;
+
+            n|N)
+                echo "Operation cancelled."
+                return ;;
+
+            *)
+                echo "Invalid choice! Please enter y or n." ;;
+        esac
+    done
+
+}
