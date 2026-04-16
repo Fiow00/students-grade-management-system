@@ -162,15 +162,18 @@ update_student() {
 
     local student_id
 
-    read -r -p "Enter Student ID: " student_id
+    while true
+    do
+        read -r -p "Enter Student ID: " student_id
+        if [[ -f "$STUDENTS_DIR/${student_id}.stu" ]]
+        then
+            break
+        else
+            echo "Error: Student ID '$student_id' not found."
+        fi
+    done
 
     local file="$STUDENTS_DIR/${student_id}.stu"
-
-    if [[ ! -f "$file" ]]
-    then
-        echo "Error: Student not found!"
-        return
-    fi
 
     echo ""
     echo "Current Data:"
@@ -212,7 +215,7 @@ update_student() {
                 read -r -p "Enter new email: " new_email
                 if [[ "$new_email" =~ ^[^@]+@[^@]+\.[^@]+$ ]]
                 then
-                    if grep -qri "^Email=${new_email}$" "$STUDENTS_DIR"
+                    if grep -qri "^EMAIL=${new_email}$" "$STUDENTS_DIR"
                     then
                         echo "Error: Email already exists."
                     else
@@ -260,30 +263,55 @@ delete_student() {
 
     local student_id
 
-    read -r -p "Enter Student ID: " student_id
+    while true
+    do
+        read -r -p "Enter Student ID: " student_id
+
+        if [[ -f "$STUDENTS_DIR/${student_id}.stu" ]]
+        then
+            break
+        else
+            echo "Error: Student ID '$student_id' not found."
+        fi
+    done
 
     local file="$STUDENTS_DIR/${student_id}.stu"
 
-    if [[ ! -f "$file" ]]
-    then
-        echo "Error: Student not found!"
-        return
-    fi
-
     echo ""
     echo "Student Data:"
-    cat "$file"
+
+    awk -F= '
+        /^ID=/{
+            print "ID    : " $2
+        }
+        /^NAME=/{
+            print "Name  : " $2
+        }
+        /^EMAIL=/{
+            print "Email : " $2
+        }
+        /^YEAR=/{
+            print "Year  : " $2
+        }
+    ' "$file"
 
     echo ""
-    read -r -p "Are you sure you want to delete this student? (y/n): " confirm
+    local confirm
 
-    case "$confirm" in
-        y|Y)
-            rm "$file"
-            echo "Student deleted successfully!" ;;
-        n|N)
-            echo "Operation cancelled." ;;
-        *)
-            echo "Invalid choice!" ;;
-    esac
+    while true
+    do
+        read -r -p "Are you sure you want to delete this student? (y/n): " confirm
+
+        case "$confirm" in
+            y|Y)
+                rm "$file"
+                echo "Student deleted successfully!" 
+                return ;;
+            n|N)
+                echo "Operation cancelled." 
+                return ;;
+            *)
+                echo "Invalid choice! Please enter y or n." ;;
+        esac
+    done
 }
