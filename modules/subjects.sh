@@ -1,3 +1,11 @@
+# =========================================
+# Subjects Module
+# Handles all subject-related operations:
+# - Add
+# - List
+# - Update
+# - Delete
+# =========================================
 manage_subjects() {
     while true
     do
@@ -103,7 +111,7 @@ add_subject() {
 list_subjects() {
     clear
     echo "============================"
-    echo "      List Subjects         "
+    echo " List Subjects "
     echo "============================"
 
     if [[ -z "$(ls -A "$SUBJECTS_DIR")" ]]

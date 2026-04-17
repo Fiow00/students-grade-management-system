@@ -37,6 +37,7 @@ manage_students() {
     done
 }
 
+
 add_student() {
     clear
     echo "=========================="
@@ -50,7 +51,7 @@ add_student() {
     do
         read -r -p "Enter Student ID (numeric, max 10 digits): " student_id
 
-        if [[ "$student_id" =~ ^[0-9]{1,10}$ ]]
+        if valid_id "$student_id"
         then
             if [[ -f "$STUDENTS_DIR/${student_id}.stu" ]]
             then
@@ -58,8 +59,6 @@ add_student() {
             else
                 break
             fi
-        else
-            echo "Error: ID must be numeric and up to 10 digits."
         fi
     done
 
@@ -69,13 +68,9 @@ add_student() {
     while true
     do
         read -r -p "Enter student name: " student_name
-        if [[ -z "$student_name" ]]
+
+        if valid_name "$student_name"
         then
-            echo "Error: Student's name cannot be empty"
-        elif [[ ! "$student_name" =~ ^[a-zA-Z[:space:]]+$ ]]
-        then
-            echo "Error: Name must contain letters only"
-        else
             break
         fi
     done
@@ -86,16 +81,18 @@ add_student() {
     while true
     do
         read -r -p "Enter student email: " student_email
-        if [[ "$student_email" =~ ^[^@]+@[^@]+\.[^@]+$ ]]
+
+        student_email="$(echo "$student_email" | xargs)"
+        student_email="${student_email,,}"
+
+        if valid_email "$student_email"
         then
-            if grep -qri "^EMAIL=${student_email}$" "$STUDENTS_DIR"
+            if grep -qrF "EMAIL=$student_email" "$STUDENTS_DIR"
             then
-                echo "Error: Email '$student_email' is already in use."
+                echo "Error: Email '$student_email' is alread in use."
             else
                 break
             fi
-        else
-            echo "Error: Invalid email. Must be in student@domain.ext format."
         fi
     done
 
@@ -103,11 +100,10 @@ add_student() {
     while true
     do
         read -r -p "Enter student's academic year(1-6): " student_year
-        if [[ "$student_year" =~ ^[1-6]$ ]]
+
+        if valid_year "$student_year"
         then
             break
-        else
-            echo "Error: Academic year must be an integer between 1 and 6."
         fi
     done
 
@@ -129,30 +125,10 @@ list_students() {
     echo " List Students "
     echo "===================================="
 
-    if [[ -z "$(ls -A "$STUDENTS_DIR")" ]]
-    then
-        echo "No students found."
-        return
-    fi
+    show_students || return
 
-    {
-        echo "ID|Name|Email|Year"
-
-        for student in "$STUDENTS_DIR"/*.stu
-        do
-            awk -F= '
-                /^ID=/    {id=$2}
-                /^NAME=/  {name=$2}
-                /^EMAIL=/ {email=$2}
-                /^YEAR=/  {year=$2}
-            
-                END {
-                    print id "|" name "|" email "|" year
-                }
-            ' "$student"
-        done
-    } | column -t -s '|'
 }
+
 
 update_student() {
     clear
@@ -160,11 +136,19 @@ update_student() {
     echo " Update Student "
     echo "=========================="
 
+    echo ""
+    echo "Available Students:"
+    echo "-------------------"
+
+    show_students || return
+    echo ""
+
     local student_id
 
     while true
     do
         read -r -p "Enter Student ID: " student_id
+
         if [[ -f "$STUDENTS_DIR/${student_id}.stu" ]]
         then
             break
@@ -177,7 +161,12 @@ update_student() {
 
     echo ""
     echo "Current Data:"
-    cat "$file"
+    awk -F= '
+        /^ID=/{print "ID    : " $2}
+        /^NAME=/{print "Name  : " $2}
+        /^EMAIL=/{print "Email : " $2}
+        /^YEAR=/{print "Year  : " $2}
+    ' "$file"
 
     echo ""
     echo "What do you want to update?"
@@ -194,52 +183,48 @@ update_student() {
             while true
             do
                 read -r -p "Enter new name: " new_name
-                if [[ -z "$new_name" ]]
+
+                if valid_name "$new_name"
                 then
-                    echo "Error: Name cannot be empty"
-                elif [[ ! "$new_name" =~ ^[a-zA-Z[:space:]]+$ ]]
-                then
-                    echo "Error: Name must contain letters only"
-                else
                     break
                 fi
             done
 
             sed -i "s/^NAME=.*/NAME=$new_name/" "$file"
             echo "Name updated successfully!" ;;
-        
+
         2)
             local new_email
             while true
             do
                 read -r -p "Enter new email: " new_email
-                if [[ "$new_email" =~ ^[^@]+@[^@]+\.[^@]+$ ]]
+
+                new_email="$(echo "$new_email" | xargs)"
+                new_email="${new_email,,}"
+
+                if valid_email "$new_email"
                 then
-                    if grep -qri "^EMAIL=${new_email}$" "$STUDENTS_DIR"
+                    if grep -qrF "EMAIL=$new_email" "$STUDENTS_DIR"
                     then
                         echo "Error: Email already exists."
                     else
                         break
                     fi
-                else
-                    echo "Invalid email format."
                 fi
             done
 
             sed -i "s/^EMAIL=.*/EMAIL=$new_email/" "$file"
             echo "Email updated successfully!" ;;
-        
+
         3)
             local new_year
-
             while true
             do
                 read -r -p "Enter new year (1-6): " new_year
-                if [[ "$new_year" =~ ^[1-6]$ ]]
+
+                if valid_year "$new_year"
                 then
                     break
-                else
-                    echo "Error: Academic year must be an integer between 1 and 6."
                 fi
             done
 
@@ -261,12 +246,18 @@ delete_student() {
     echo " Delete Student "
     echo "=========================="
 
+    echo ""
+    echo "Available Students:"
+    echo "-------------------"
+
+    show_students || return
+    echo ""
+
     local student_id
 
     while true
     do
         read -r -p "Enter Student ID: " student_id
-
         if [[ -f "$STUDENTS_DIR/${student_id}.stu" ]]
         then
             break
@@ -279,20 +270,11 @@ delete_student() {
 
     echo ""
     echo "Student Data:"
-
     awk -F= '
-        /^ID=/{
-            print "ID    : " $2
-        }
-        /^NAME=/{
-            print "Name  : " $2
-        }
-        /^EMAIL=/{
-            print "Email : " $2
-        }
-        /^YEAR=/{
-            print "Year  : " $2
-        }
+        /^ID=/{print "ID    : " $2}
+        /^NAME=/{print "Name  : " $2}
+        /^EMAIL=/{print "Email : " $2}
+        /^YEAR=/{print "Year  : " $2}
     ' "$file"
 
     echo ""
@@ -305,10 +287,10 @@ delete_student() {
         case "$confirm" in
             y|Y)
                 rm "$file"
-                echo "Student deleted successfully!" 
+                echo "Student deleted successfully!"
                 return ;;
             n|N)
-                echo "Operation cancelled." 
+                echo "Operation cancelled."
                 return ;;
             *)
                 echo "Invalid choice! Please enter y or n." ;;

@@ -12,6 +12,8 @@ source modules/subjects.sh || { echo "Error loading subjects module"; exit 1; }
 source modules/grades.sh || { echo "Error loading grades module"; exit 1; }
 source modules/reports.sh || { echo "Error loading reports module"; exit 1; }
 
+source helpers/students_helpers.sh || { echo "Error loading students helpers"; exit 1; }
+
 while true
 do
     clear
