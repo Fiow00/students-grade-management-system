@@ -136,3 +136,71 @@ student_transcript() {
     echo "Total Credits : $total_credits"
     echo "Final GPA     : $gpa"
 }
+
+subject_statistics() {
+    clear
+    echo "=============================="
+    echo " Subject Statistics Report "
+    echo "=============================="
+
+    local subject_code
+
+   
+    while true
+    do
+        read -r -p "Enter Subject Code: " subject_code
+
+        if [[ -f "$SUBJECTS_DIR/${subject_code}.sub" ]]
+        then
+            break
+        else
+            echo "Error: Subject Code '$subject_code' does not exist."
+        fi
+    done
+
+    local subject_file="$SUBJECTS_DIR/${subject_code}.sub"
+    local grade_file="$GRADES_DIR/${subject_code}.grd"
+    local subject_name
+    local total_students=0
+
+    
+    declare -A grade_counts
+
+    
+    for grade in A+ A A- B+ B B- C+ C C- D F
+    do
+        grade_counts["$grade"]=0
+    done
+
+    
+    subject_name=$(awk -F= '/^NAME=/{print $2}' "$subject_file")
+
+    echo ""
+    echo "Statistics for $subject_name (Code: $subject_code)"
+    echo "------------------------------------------------------------"
+    printf "%-10s %-20s\n" "Grade" "Count"
+    echo "------------------------------------------------------------"
+
+    
+    if [[ ! -f "$grade_file" ]]
+    then
+        echo "No grades found for this subject."
+        return
+    fi
+
+    
+    while IFS='|' read -r student_id score letter
+    do
+        grade_counts["$letter"]=$((grade_counts["$letter"] + 1))
+        total_students=$((total_students + 1))
+    done < "$grade_file"
+
+   
+    for grade in A+ A A- B+ B B- C+ C C- D F
+    do
+        printf "%-10s %-20s\n" "$grade" "${grade_counts[$grade]}"
+    done
+
+    echo "------------------------------------------------------------"
+    echo "Total Students : $total_students"
+}
