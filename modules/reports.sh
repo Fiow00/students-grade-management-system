@@ -204,3 +204,102 @@ subject_statistics() {
     echo "------------------------------------------------------------"
     echo "Total Students : $total_students"
 }
+
+top_students() {
+    clear
+    echo "=============================="
+    echo " Top Students by GPA Report "
+    echo "=============================="
+
+    local temp_file="/tmp/top_students_report.tmp"
+
+    
+    > "$temp_file"
+
+   
+    for student_file in "$STUDENTS_DIR"/*.stu
+    do
+        [[ -f "$student_file" ]] || continue
+
+        
+        local total_credits=0
+        local total_points=0
+        local has_grades=false
+
+        
+        local student_id=$(awk -F= '/^ID=/{print $2}' "$student_file")
+        local student_name=$(awk -F= '/^NAME=/{print $2}' "$student_file")
+
+        # loop on all grade files
+        for grade_file in "$GRADES_DIR"/*.grd
+        do
+            [[ -f "$grade_file" ]] || continue
+
+            
+
+           local subject_code=$(basename "$grade_file" .grd)
+
+           local student_grade_line=$(grep "^${student_id}|" "$grade_file")
+
+            if [[ -n "$student_grade_line" ]]
+            then
+                has_grades=true
+
+                local score
+                local letter
+                local points
+                local subject_file
+                local credits
+
+                IFS='|' read -r _ score letter <<< "$student_grade_line"
+
+                subject_file="$SUBJECTS_DIR/${subject_code}.sub"
+
+                if [[ -f "$subject_file" ]]
+                then
+                    credits=$(awk -F= '/^CREDITS=/{print $2}' "$subject_file")
+
+                    total_credits=$((total_credits + credits))
+
+                    
+                    case "$letter" in
+                        A+) points=4 ;;
+                        A)  points=4 ;;
+                        A-) points=3.7 ;;
+                        B+) points=3.3 ;;
+                        B)  points=3 ;;
+                        B-) points=2.7 ;;
+                        C+) points=2.3 ;;
+                        C)  points=2 ;;
+                        C-) points=1.7 ;;
+                        D)  points=1 ;;
+                        F)  points=0 ;;
+                        *)  points=0 ;;
+                    esac
+
+                    total_points=$(echo "$total_points + ($points * $credits)" | bc)
+                fi
+            fi
+        done
+
+       
+        if [[ "$has_grades" == true && $total_credits -gt 0 ]]
+        then
+            local gpa
+            gpa=$(echo "scale=2; $total_points / $total_credits" | bc)
+
+            echo "$student_id|$student_name|$gpa" >> "$temp_file"
+        fi
+    done
+
+    echo ""
+    echo "Top Students by GPA"
+    echo "------------------------------------------------------------"
+    printf "%-12s %-25s %-10s\n" "Student ID" "Name" "GPA"
+    echo "------------------------------------------------------------"
+
+    sort -t'|' -k3,3nr "$temp_file" | head -5 | \
+    awk -F'|' '{printf "%-12s %-25s %-10s\n", $1, $2, $3}'
+
+    rm -f "$temp_file"
+}
