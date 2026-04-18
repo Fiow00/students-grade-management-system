@@ -50,16 +50,16 @@ add_subject() {
     do
         read -r -p "Enter Subject Code (e.g CS101, MATH203): " subject_code
 
-        if [[ "$subject_code" =~ ^[a-zA-Z]{2,5}[0-9]{2,4}$ ]]
+        if is_valid_code "$subject_code"
         then
+            subject_code="${subject_code^^}"
+
             if [[ -f "$SUBJECTS_DIR/${subject_code}.sub" ]]
             then
                 echo "Error: Subject code '$subject_code' already exists."
             else
                 break
             fi
-        else
-            echo "Error: Code must be 2-5 letters followed by 2-4 digits (e.g. CS101)."
         fi
     done
 
@@ -70,13 +70,8 @@ add_subject() {
     do
         read -r -p "Enter Subject Name: " subject_name
 
-        if [[ -z "$subject_name" ]]
+        if is_valid_subject_name "$subject_name"
         then
-            echo "Error: Subject name cannot be empty."
-        elif [[ ! "$subject_name" =~ ^[a-zA-Z[:space:]]+$ ]]
-        then
-            echo "Error: Name must contain letters only."
-        else
             break
         fi
     done
@@ -88,11 +83,9 @@ add_subject() {
     do
         read -r -p "Enter Credit Hours (1-6): " subject_credits
 
-        if [[ "$subject_credits" =~ ^[1-6]$ ]]
+        if is_valid_credits "$subject_credits"
         then
             break
-        else
-            echo "Error: Credit hours must be an integer between 1 and 6."
         fi
     done
 
@@ -113,29 +106,10 @@ list_subjects() {
     echo "============================"
     echo " List Subjects "
     echo "============================"
+    echo ""
 
-    if [[ -z "$(ls -A "$SUBJECTS_DIR")" ]]
-    then
-        echo "No subjects found."
-        return
-    fi
+    show_subjects || return
 
-    {
-        echo "Code|Name|Credits"
-
-        for subject in "$SUBJECTS_DIR"/*.sub
-        do
-            awk -F= '
-                /^CODE=/    {code=$2}
-                /^NAME=/    {name=$2}
-                /^CREDITS=/ {credits=$2}
-
-                END {
-                    print code "|" name "|" credits
-                }
-            ' "$subject"
-        done
-    } | column -t -s '|'
 }
 
 
@@ -145,11 +119,20 @@ update_subject() {
     echo " Update Subject "
     echo "==========================="
 
+    echo ""
+    echo "Available Subjects:"
+    echo "-------------------"
+
+    show_subjects || return
+    echo ""
+
     local subject_code
 
     while true
     do
         read -r -p "Enter Subject Code: " subject_code
+
+        subject_code="${subject_code^^}"
 
         if [[ -f "$SUBJECTS_DIR/${subject_code}.sub" ]]
         then
@@ -171,7 +154,7 @@ update_subject() {
             print "Name    : " $2
         }
         /^CREDITS=/{
-            print "Dredits : " $2
+            print "Credits : " $2
         }
     ' "$file"
 
@@ -191,18 +174,13 @@ update_subject() {
             do
                 read -r -p "Enter new name: " new_name
 
-                if [[ -z "$new_name" ]]
+                if is_valid_subject_name "$new_name"
                 then
-                    echo "Error: Name cannot be empty."
-                elif [[ ! "$new_name" =~ ^[a-zA-Z[:space:]]+$ ]]
-                then
-                    echo "Error: Name must contains letters only."
-                else
                     break
                 fi
             done
 
-            sed -i "s/^NAME=.*/NAME=$new_name/" "file"
+            sed -i "s/^NAME=.*/NAME=$new_name/" "$file"
             echo "Name updated successfully!" ;;
         
         2)
@@ -211,11 +189,9 @@ update_subject() {
             do
                 read -r -p "Enter new credit hours (1-6): " new_credits
 
-                if [[ "$new_credits" =~ ^[1-6]$ ]]
+                if is_valid_credits "$new_credits"
                 then
                     break
-                else
-                    echo "Error: Credit hours must be an integer between 1 and 6."
                 fi
             done
 
@@ -231,17 +207,27 @@ update_subject() {
 
 }
 
+
 delete_subject() {
     clear
     echo "============================"
     echo " Delete Subject "
     echo "============================"
 
+    echo ""
+    echo "Available Subjects: "
+    echo "--------------------"
+
+    show_subjects || return
+    echo ""
+
     local subject_code
 
     while true
     do
         read -r -p "Enter Subject Code: " subject_code
+
+        subject_code="${subject_code^^}"
 
         if [[ -f "$SUBJECTS_DIR/${subject_code}.sub" ]]
         then
