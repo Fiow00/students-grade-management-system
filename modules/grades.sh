@@ -30,22 +30,6 @@ manage_grades() {
     done
 }
 
-get_grade() {
-    local score=$1
-    awk -v score="$score" 'BEGIN {
-        if (score >= 90) print "A+"
-        else if (score >= 85) print "A"
-        else if (score >= 80) print "A-"
-        else if (score >= 75) print "B+"
-        else if (score >= 70) print "B"
-        else if (score >= 65) print "B-"
-        else if (score >= 60) print "C+"
-        else if (score >= 55) print "C"
-        else if (score >= 50) print "C-"
-        else if (score >= 45) print "D"
-        else print "F"
-    }'
-}
 
 assign_grade() {
     clear
@@ -57,24 +41,7 @@ assign_grade() {
     echo "Avilable Subjects: "
     echo "-------------------"
 
-    if [[ -z "$(ls -A "$SUBJECTS_DIR")" ]]
-    then
-        echo "No subjects found. Please add subjects first."
-        return
-    fi
-
-    {
-        echo "Code|Name|Credits"
-        for subject in "$SUBJECTS_DIR"/*.sub
-        do
-            awk -F= '
-                /^CODE=/    {code=$2}
-                /^NAME=/    {name=$2}
-                /^CREDITS=/ {credits=$2}
-                END { print code "|" name "|" credits }
-            ' "$subject"
-        done
-    } | column -t -s '|'
+    show_subjects || return
     echo ""
 
     local subject_code
@@ -83,11 +50,13 @@ assign_grade() {
     do
         read -r -p "Enter Subject Code: " subject_code
 
+        subject_code="${subject_code^^}"
+
         if [[ -f "$SUBJECTS_DIR/${subject_code}.sub" ]]
         then
             break
         else
-            echo "Error: Subject code '$subject_code' not found."
+            echo "Eror: Subject code '$subject_code' not found."
         fi
     done
 
@@ -95,25 +64,7 @@ assign_grade() {
     echo "Available Students:"
     echo "-------------------"
 
-    if [[ -z "$(ls -A "$STUDENTS_DIR")" ]]
-    then
-        echo "No students found. Please add students first."
-        return
-    fi
-
-    {
-        echo "ID|Name|Email|Year"
-        for student in "$STUDENTS_DIR"/*.stu
-        do
-            awk -F= '
-                /^ID=/    {id=$2}
-                /^NAME=/  {name=$2}
-                /^EMAIL=/ {email=$2}
-                /^YEAR=/  {year=$2}
-                END { print id "|" name "|" email "|" year }
-            ' "$student"
-        done
-    } | column -t -s '|'
+    show_students || return
     echo ""
 
     local student_id
@@ -148,29 +99,13 @@ assign_grade() {
     do
         read -r -p "Enter Score (0.0 - 100.0): " score
 
-        if [[ ! "$score" =~ ^[0-9]+(\.[0-9]+)?$ ]]
-        then
-            echo "Error: Score must be a number (e.g 85 or 92.5)."
-            continue
-        fi
-
-        valid_range=$(awk -v s="$score" 'BEGIN {
-            if (s >= 0 && s <= 100)
-                print "yes"
-            else
-                print "no"
-        }')
-
-        if [[ "$valid_range" == "yes" ]]
+        if is_valid_score "$score"
         then
             break
-        else
-            echo "Error: Score must be a number between 0.0 and 100.0."
         fi
     done
 
     local letter
-
     letter=$(get_grade "$score")
 
     echo "${student_id}|${score}|${letter}" >> "$file"
@@ -194,24 +129,7 @@ update_grade() {
     echo "Avialable Subjects:"
     echo "-------------------"
 
-    if [[ -z "$(ls -A "$SUBJECTS_DIR")" ]]
-    then
-        echo "No subjects found."
-        return
-    fi
-
-    {
-        echo "Code|Name|Credits"
-        for subject in "$SUBJECTS_DIR"/*.sub
-        do
-            awk -F= '
-                /^CODE=/    {code=$2}
-                /^NAME=/    {name=$2}
-                /^CREDITS=/ {credits=$2}
-                END { print code "|" name "|" credits }
-            ' "$subject"
-        done
-    } | column -t -s '|'
+    show_subjects || return
     echo ""
 
     local subject_code
@@ -219,6 +137,7 @@ update_grade() {
     while true
     do
         read -r -p "Enter Subject Code: " subject_code
+        subject_code="${subject_code^^}"
 
         if [[ ! -f "$SUBJECTS_DIR/${subject_code}.sub" ]]
         then
@@ -237,12 +156,7 @@ update_grade() {
     echo "Current Grades for '$subject_code':"
     echo "-----------------------------------"
 
-    {
-        echo "Student ID|Score|Letter"
-        awk -F'|' '
-            { print $1 "|" $2 "|" $3 }
-        ' "$file"
-    } | column -t -s '|'
+    show_grade_file "$file"
     echo ""
 
     local student_id
@@ -265,29 +179,13 @@ update_grade() {
     do
         read -r -p "Enter New Score (0.0 - 100.0): " new_score
 
-        if [[ ! "$new_score" =~ ^[0-9]+(\.[0-9]+)?$ ]]
-        then
-            echo "Error: Score must be a number (e.g 85 or 92.5)."
-            continue
-        fi
-
-        valid_range=$(awk -v s="$new_score" 'BEGIN {
-            if (s >= 0 && s <= 100)
-                print "yes"
-            else
-                print "no"
-        }')
-
-        if [[ "$valid_range" == "yes" ]]
+        if is_valid_score "$new_score"
         then
             break
-        else
-            echo "Error: Score must be between 0.0 and 100.0"
         fi
     done
 
     local new_letter
-
     new_letter=$(get_grade "$new_score")
 
     sed -i "s/^${student_id}|.*/${student_id}|${new_score}|${new_letter}/" "$file"
@@ -311,25 +209,7 @@ delete_grade() {
     echo "Available Subjects:"
     echo "-------------------"
 
-    if [[ -z "$(ls -A "$SUBJECTS_DIR")" ]]
-    then
-        echo "No subjects found."
-        return
-    fi
-
-    {
-        echo "Code|Name|Credits"
-
-        for subject in "$SUBJECTS_DIR"/*.sub
-        do
-            awk -F= '
-                /^CODE=/    {code=$2}
-                /^NAME=/    {name=$2}
-                /^CREDITS=/  {credits=$2}
-                END { print code "|" name "|" credits }
-            ' "$subject"
-        done
-    } | column -t -s '|'
+    show_subjects || return
     echo ""
 
     local subject_code
@@ -337,6 +217,7 @@ delete_grade() {
     while true
     do
         read -r -p "Enter Subject Code: " subject_code
+        subject_code="${subject_code^^}"
 
         if [[ ! -f "$SUBJECTS_DIR/${subject_code}.sub" ]]
         then
@@ -355,13 +236,7 @@ delete_grade() {
     echo "Current Grades for '$subject_code':"
     echo "-----------------------------------"
 
-    {
-        echo "Student ID|Score|Letter"
-        awk -F'|' '
-            { print $1 "|" $2 "|" $3}
-        ' "$file"
-    } | column -t -s '|'
-    echo ""
+    show_grade_file "$file"
 
     local student_id
 
@@ -418,34 +293,14 @@ view_grades_by_subject() {
     echo "Available Subjects: "
     echo "--------------------"
 
-    if [[ -z "$(ls -A "$SUBJECTS_DIR")" ]]
-    then
-        echo "No subjects found."
-        return 
-    fi
-
-    {
-        echo "Code|Name|Credits"
-
-        for subject in "$SUBJECTS_DIR"/*.sub
-        do
-            awk -F= '
-                /^CODE=/    {code=$2}
-                /^NAME=/    {name=$2}
-                /^CREDITS=/ {credits=$2}
-                END {
-                    print code "|" name "|" credits
-                }
-            ' "$subject"
-        done
-    } | column -t -s '|'
-    echo ""
+    show_subjects || return
 
     local subject_code
 
     while true
     do
         read -r -p "Enter Subject Code: " subject_code
+        subject_code="${subject_code^^}"
 
         if [[ ! -f "$SUBJECTS_DIR/${subject_code}.sub" ]]
         then
@@ -489,6 +344,7 @@ view_grades_by_subject() {
     } | column -t -s '|'
 }
 
+
 view_grades_by_student() {
     clear
     echo "==========================="
@@ -499,27 +355,7 @@ view_grades_by_student() {
     echo "Available Students:"
     echo "-------------------"
 
-    if [[ -z "$(ls -A "$STUDENTS_DIR")" ]]
-    then
-        echo "No students found."
-        return
-    fi
-
-    {
-        echo "ID|Name|Email|Year"
-        for student in "$STUDENTS_DIR"/*.stu
-        do
-            awk -F= '
-                /^ID=/    {id=$2}
-                /^NAME=/  {name=$2}
-                /^EMAIL=/ {email=$2}
-                /^YEAR=/  {year=$2}
-                END {
-                    print id "|" name "|" email "|" year 
-                }
-            ' "$student"
-        done
-    } | column -t -s '|'
+    show_students || return
     echo ""
 
     local student_id
@@ -560,14 +396,22 @@ view_grades_by_student() {
             if grep -q "^${student_id}|" "$grade_file"
             then
                 found=1
-                subject_code=$(basename "$grade_file" .grd)
+                subject_code="${grade_file##*/}"
+                subject_code="${subject_code%.grd}"
+
+                local subject_code
                 subject_name=$(
                     awk -F= '
                         /^NAME=/{print $2}
                     ' "$SUBJECTS_DIR/${subject_code}.sub" 2>/dev/null
                 )
+
+                local score
                 score=$(grep "^${student_id}|" "$grade_file" | awk -F'|' '{print $2}')
+
+                local letter
                 letter=$(grep "^${student_id}|" "$grade_file" | awk -F'|' '{print $3}')
+
                 echo "${subject_code}|${subject_name:-Unknown}|${score}|${letter}"
             fi
         done
