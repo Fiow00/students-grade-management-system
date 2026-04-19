@@ -360,3 +360,58 @@ failing_students() {
 
     rm -f "$temp_file"
 }
+
+full_grade_matrix() {
+    clear
+    echo "=============================="
+    echo " Full Grade Matrix Report "
+    echo "=============================="
+
+    local temp_file="/tmp/full_grade_matrix_report.tmp"
+
+    > "$temp_file"
+
+    for student_file in "$STUDENTS_DIR"/*.stu
+    do
+        [[ -f "$student_file" ]] || continue
+
+        local student_id=$(awk -F= '/^ID=/{print $2}' "$student_file")
+        local student_name=$(awk -F= '/^NAME=/{print $2}' "$student_file")
+
+        echo -n "$student_id|$student_name" >> "$temp_file"
+
+        for grade_file in "$GRADES_DIR"/*.grd
+        do
+            [[ -f "$grade_file" ]] || continue
+
+            local student_grade_line=$(grep "^${student_id}|" "$grade_file")
+
+            if [[ -n "$student_grade_line" ]]
+            then
+                local score
+                local letter
+
+                IFS='|' read -r _ score letter <<< "$student_grade_line"
+
+                echo -n "|$letter" >> "$temp_file"
+            else
+                echo -n "|-" >> "$temp_file"
+            fi
+        done
+
+        echo "" >> "$temp_file"
+    done
+
+    echo ""
+    echo "Full Grade Matrix"
+    echo "------------------------------------------------------------"
+    echo "Student ID    Name                 Grades"
+    echo "------------------------------------------------------------"
+
+    sort -t'|' -k1,1 "$temp_file" | \
+    awk -F'|' '{
+        printf "%-12s %-20s %s\n", $1, $2, substr($0, index($0,$3)) 
+    }'
+
+    rm -f "$temp_file"
+}
