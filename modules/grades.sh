@@ -99,6 +99,14 @@ assign_grade() {
     do
         read -r -p "Enter Score (0.0 - 100.0): " score
 
+        score="${score#"${score%%[!0]*}"}"
+        score="${score:-0}"
+
+        if [[ "$score" == .* ]]
+        then
+            score="0${score}"
+        fi
+
         if is_valid_score "$score"
         then
             break
@@ -156,7 +164,7 @@ update_grade() {
     echo "Current Grades for '$subject_code':"
     echo "-----------------------------------"
 
-    show_grade_file "$file"
+    show_grade_file "$file" || return
     echo ""
 
     local student_id
@@ -236,7 +244,8 @@ delete_grade() {
     echo "Current Grades for '$subject_code':"
     echo "-----------------------------------"
 
-    show_grade_file "$file"
+    show_grade_file "$file" || return
+    echo ""
 
     local student_id
 
@@ -294,6 +303,7 @@ view_grades_by_subject() {
     echo "--------------------"
 
     show_subjects || return
+    echo ""
 
     local subject_code
 

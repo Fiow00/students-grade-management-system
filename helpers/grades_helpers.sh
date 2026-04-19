@@ -48,6 +48,12 @@ is_valid_score() {
 show_grade_file() {
     local file=$1
 
+    if [[ ! -f "$file" ]] || [[ ! -s "$file" ]]
+    then
+        echo "No grades found."
+        return 1
+    fi
+
     {
         echo "Student ID|Score|Letter"
         awk -F'|' '{ print $1 "|" $2 "|" $3 }' "$file"

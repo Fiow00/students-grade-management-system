@@ -158,52 +158,57 @@ update_subject() {
         }
     ' "$file"
 
-    echo ""
-    echo "What do you want to update? "
-    echo "1) Name"
-    echo "2) Credits"
-    echo "b) Back"
+    while true
+    do
+        echo ""
+        echo "What do you want to update? "
+        echo "1) Name"
+        echo "2) Credits"
+        echo "b) Back"
 
-    read -r -p "Enter your choice: " choice
+        read -r -p "Enter your choice: " choice
 
-    case "$choice" in
-        1)
-            local new_name
+        case "$choice" in
+            1)
+                local new_name
 
-            while true
-            do
-                read -r -p "Enter new name: " new_name
+                while true
+                do
+                    read -r -p "Enter new name: " new_name
 
-                if is_valid_subject_name "$new_name"
-                then
-                    break
-                fi
-            done
+                    if is_valid_subject_name "$new_name"
+                    then
+                        break
+                    fi
+                done
 
-            sed -i "s/^NAME=.*/NAME=$new_name/" "$file"
-            echo "Name updated successfully!" ;;
-        
-        2)
-            local new_credits
-            while true
-            do
-                read -r -p "Enter new credit hours (1-6): " new_credits
+                sed -i "s/^NAME=.*/NAME=$new_name/" "$file"
+                echo "Name updated successfully!"
+                break ;;
+            
+            2)
+                local new_credits
+                while true
+                do
+                    read -r -p "Enter new credit hours (1-6): " new_credits
 
-                if is_valid_credits "$new_credits"
-                then
-                    break
-                fi
-            done
+                    if is_valid_credits "$new_credits"
+                    then
+                        break
+                    fi
+                done
 
-            sed -i "s/^CREDITS=.*/CREDITS=$new_credits/" "$file"
-            echo "Credits updated successfully!" ;;
+                sed -i "s/^CREDITS=.*/CREDITS=$new_credits/" "$file"
+                echo "Credits updated successfully!"
+                break ;;
 
-        b)
-            return ;;
+            b)
+                return ;;
 
-        *)
-            echo "Invalid choice!" ;;
-    esac
+            *)
+                echo "Invalid choice! Please enter 1, 2 or b." ;;
+        esac
+    done
 
 }
 

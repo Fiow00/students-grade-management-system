@@ -31,6 +31,10 @@ valid_id() {
     then
         echo "Error: ID must be numeric and up to 10 digits."
         return 1
+    elif [[ "$id" -eq 0 ]]
+    then
+        echo "Error: Student Id cannot be zero."
+        return 1
     fi
 
     return 0

@@ -1,12 +1,3 @@
-# =========================================
-# Students Module
-# Handles all student-related operations:
-# - Add
-# - List
-# - Update
-# - Delete
-# =========================================
-
 manage_students() {
     while true
     do
@@ -43,6 +34,13 @@ add_student() {
     echo "=========================="
     echo " Add Student "
     echo "=========================="
+
+    echo ""
+    echo "Available Students: "
+    echo "--------------------"
+
+    show_students || return
+    echo ""
 
     # get student id
     local student_id
@@ -82,7 +80,6 @@ add_student() {
     do
         read -r -p "Enter student email: " student_email
 
-        student_email="$(echo "$student_email" | xargs)"
         student_email="${student_email,,}"
 
         if valid_email "$student_email"
@@ -168,75 +165,81 @@ update_student() {
         /^YEAR=/{print "Year  : " $2}
     ' "$file"
 
-    echo ""
-    echo "What do you want to update?"
-    echo "1) Name"
-    echo "2) Email"
-    echo "3) Year"
-    echo "b) Back"
+    while true
+    do
+        echo ""
+        echo "What do you want to update?"
+        echo "1) Name"
+        echo "2) Email"
+        echo "3) Year"
+        echo "b) Back"
 
-    read -r -p "Enter your choice: " choice
+        read -r -p "Enter your choice: " choice
 
-    case "$choice" in
-        1)
-            local new_name
-            while true
-            do
-                read -r -p "Enter new name: " new_name
+        case "$choice" in
+            1)
+                local new_name
+                while true
+                do
+                    read -r -p "Enter new name: " new_name
 
-                if valid_name "$new_name"
-                then
-                    break
-                fi
-            done
-
-            sed -i "s/^NAME=.*/NAME=$new_name/" "$file"
-            echo "Name updated successfully!" ;;
-
-        2)
-            local new_email
-            while true
-            do
-                read -r -p "Enter new email: " new_email
-
-                new_email="$(echo "$new_email" | xargs)"
-                new_email="${new_email,,}"
-
-                if valid_email "$new_email"
-                then
-                    if grep -qrF "EMAIL=$new_email" "$STUDENTS_DIR"
+                    if valid_name "$new_name"
                     then
-                        echo "Error: Email already exists."
-                    else
                         break
                     fi
-                fi
-            done
+                done
 
-            sed -i "s/^EMAIL=.*/EMAIL=$new_email/" "$file"
-            echo "Email updated successfully!" ;;
+                sed -i "s/^NAME=.*/NAME=$new_name/" "$file"
+                echo "Name updated successfully!"
+                break ;;
 
-        3)
-            local new_year
-            while true
-            do
-                read -r -p "Enter new year (1-6): " new_year
+            2)
+                local new_email
+                while true
+                do
+                    read -r -p "Enter new email: " new_email
 
-                if valid_year "$new_year"
-                then
-                    break
-                fi
-            done
+                    new_email="$(echo "$new_email" | xargs)"
+                    new_email="${new_email,,}"
 
-            sed -i "s/^YEAR=.*/YEAR=$new_year/" "$file"
-            echo "Year updated successfully!" ;;
+                    if valid_email "$new_email"
+                    then
+                        if grep -qrF "EMAIL=$new_email" "$STUDENTS_DIR"
+                        then
+                            echo "Error: Email already exists."
+                        else
+                            break
+                        fi
+                    fi
+                done
 
-        b)
-            return ;;
+                sed -i "s/^EMAIL=.*/EMAIL=$new_email/" "$file"
+                echo "Email updated successfully!"
+                break ;;
 
-        *)
-            echo "Invalid choice!" ;;
-    esac
+            3)
+                local new_year
+                while true
+                do
+                    read -r -p "Enter new year (1-6): " new_year
+
+                    if valid_year "$new_year"
+                    then
+                        break
+                    fi
+                done
+
+                sed -i "s/^YEAR=.*/YEAR=$new_year/" "$file"
+                echo "Year updated successfully!"
+                break ;;
+
+            b)
+                return ;;
+
+            *)
+                echo "Invalid choice!" ;;
+        esac
+    done
 }
 
 
@@ -287,6 +290,13 @@ delete_student() {
         case "$confirm" in
             y|Y)
                 rm "$file"
+
+                for grade_file in "$GRADES_DIR"/*.grd
+                do
+                    [[ -f "$grade_file" ]] || continue
+                    sed -i "/^${student_id}|/d" "$grade_file"
+                done
+
                 echo "Student deleted successfully!"
                 return ;;
             n|N)

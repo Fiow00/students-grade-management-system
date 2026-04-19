@@ -1,20 +1,24 @@
 #!/bin/bash
 
 DATA_DIR="sgms_data"
+
+mkdir -p "$DATA_DIR"
+
 STUDENTS_DIR="$DATA_DIR/students"
 SUBJECTS_DIR="$DATA_DIR/subjects"
 GRADES_DIR="$DATA_DIR/grades"
 
 mkdir -p "$STUDENTS_DIR" "$SUBJECTS_DIR" "$GRADES_DIR"
 
+source helpers/students_helpers.sh || { echo "Error loading students helpers"; exit 1; }
+source helpers/subjects_helpers.sh || { echo "Error loading subjects helpers"; exit 1; }
+source helpers/grades_helpers.sh || { echo "Error loading grades helpers"; exit 1; }
+
 source modules/students.sh || { echo "Error loading students module"; exit 1; }
 source modules/subjects.sh || { echo "Error loading subjects module"; exit 1; }
 source modules/grades.sh || { echo "Error loading grades module"; exit 1; }
 source modules/reports.sh || { echo "Error loading reports module"; exit 1; }
 
-source helpers/students_helpers.sh || { echo "Error loading students helpers"; exit 1; }
-source helpers/subjects_helpers.sh || { echo "Error loading subjects helpers"; exit 1; }
-source helpers/grades_helpers.sh || { echo "Error loading grades helpers"; exit 1; }
 
 while true
 do
