@@ -213,20 +213,16 @@ top_students() {
 
     local temp_file="/tmp/top_students_report.tmp"
 
-    
     > "$temp_file"
 
-   
     for student_file in "$STUDENTS_DIR"/*.stu
     do
         [[ -f "$student_file" ]] || continue
 
-        
         local total_credits=0
         local total_points=0
         local has_grades=false
 
-        
         local student_id=$(awk -F= '/^ID=/{print $2}' "$student_file")
         local student_name=$(awk -F= '/^NAME=/{print $2}' "$student_file")
 
@@ -235,11 +231,9 @@ top_students() {
         do
             [[ -f "$grade_file" ]] || continue
 
-            
+            local subject_code=$(basename "$grade_file" .grd)
 
-           local subject_code=$(basename "$grade_file" .grd)
-
-           local student_grade_line=$(grep "^${student_id}|" "$grade_file")
+            local student_grade_line=$(grep "^${student_id}|" "$grade_file")
 
             if [[ -n "$student_grade_line" ]]
             then
@@ -261,7 +255,6 @@ top_students() {
 
                     total_credits=$((total_credits + credits))
 
-                    
                     case "$letter" in
                         A+) points=4 ;;
                         A)  points=4 ;;
@@ -282,7 +275,6 @@ top_students() {
             fi
         done
 
-       
         if [[ "$has_grades" == true && $total_credits -gt 0 ]]
         then
             local gpa
@@ -295,11 +287,76 @@ top_students() {
     echo ""
     echo "Top Students by GPA"
     echo "------------------------------------------------------------"
-    printf "%-12s %-25s %-10s\n" "Student ID" "Name" "GPA"
+
+    awk 'BEGIN {
+        printf "%-12s %-25s %-10s\n", "Student ID", "Name", "GPA"
+    }'
+
     echo "------------------------------------------------------------"
 
     sort -t'|' -k3,3nr "$temp_file" | head -5 | \
-    awk -F'|' '{printf "%-12s %-25s %-10s\n", $1, $2, $3}'
+    awk -F'|' '{
+        printf "%-12s %-25s %-10s\n", $1, $2, $3
+    }'
+
+    rm -f "$temp_file"
+} 
+
+failing_students() {
+    clear
+    echo "=============================="
+    echo " Failing Students Report "
+    echo "=============================="
+
+    local temp_file="/tmp/failing_students_report.tmp"
+
+    > "$temp_file"
+
+    for student_file in "$STUDENTS_DIR"/*.stu
+    do
+        [[ -f "$student_file" ]] || continue
+
+        local student_id=$(awk -F= '/^ID=/{print $2}' "$student_file")
+        local student_name=$(awk -F= '/^NAME=/{print $2}' "$student_file")
+
+       
+        for grade_file in "$GRADES_DIR"/*.grd
+        do
+            [[ -f "$grade_file" ]] || continue
+
+            local subject_code=$(basename "$grade_file" .grd)
+
+            local student_grade_line=$(grep "^${student_id}|" "$grade_file")
+
+            if [[ -n "$student_grade_line" ]]
+            then
+                local score
+                local letter
+
+                IFS='|' read -r _ score letter <<< "$student_grade_line"
+
+                if [[ "$letter" == "F" ]]
+                then
+                    echo "$student_id|$student_name|$subject_code" >> "$temp_file"
+                fi
+            fi
+        done
+    done
+
+    echo ""
+    echo "Failing Students"
+    echo "------------------------------------------------------------"
+
+    awk 'BEGIN {
+        printf "%-12s %-25s %-15s\n", "Student ID", "Name", "Subject Code"
+    }'
+
+    echo "------------------------------------------------------------"
+
+    sort -t'|' -k1,1 "$temp_file" | \
+    awk -F'|' '{
+        printf "%-12s %-25s %-15s\n", $1, $2, $3
+    }'
 
     rm -f "$temp_file"
 }
