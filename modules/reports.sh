@@ -31,7 +31,7 @@ student_transcript() {
     echo "=============================="
     echo " Student Transcript + GPA Report "
     echo "=============================="
-    
+    echo " "
     echo "Available Students:"
     echo "-------------------"
 
@@ -148,6 +148,12 @@ subject_statistics() {
     echo "=============================="
     echo " Subject Statistics Report "
     echo "=============================="
+    echo " "
+    echo "Available Subjects:"
+    echo "-------------------"
+
+    show_subjects
+    echo ""
 
     local subject_code
 
