@@ -1,12 +1,3 @@
-# =========================================
-# Students Module
-# Handles all student-related operations:
-# - Add
-# - List
-# - Update
-# - Delete
-# =========================================
-
 manage_students() {
     while true
     do
@@ -37,75 +28,30 @@ manage_students() {
     done
 }
 
-
 add_student() {
     clear
     echo "=========================="
     echo " Add Student "
     echo "=========================="
+    echo ""
 
-    # get student id
+    echo "Available Students:"
+    echo "-------------------"
+
+    show_students
+    echo ""
+
     local student_id
+    student_id=$(get_student_id)
 
-    while true
-    do
-        read -r -p "Enter Student ID (numeric, max 10 digits): " student_id
-
-        if valid_id "$student_id"
-        then
-            if [[ -f "$STUDENTS_DIR/${student_id}.stu" ]]
-            then
-                echo "Error: Student ID '$student_id' already exists."
-            else
-                break
-            fi
-        fi
-    done
-
-    # get student name
     local student_name
+    student_name=$(get_student_name)
 
-    while true
-    do
-        read -r -p "Enter student name: " student_name
-
-        if valid_name "$student_name"
-        then
-            break
-        fi
-    done
-
-    # get student email
     local student_email
-
-    while true
-    do
-        read -r -p "Enter student email: " student_email
-
-        student_email="$(echo "$student_email" | xargs)"
-        student_email="${student_email,,}"
-
-        if valid_email "$student_email"
-        then
-            if grep -qrF "EMAIL=$student_email" "$STUDENTS_DIR"
-            then
-                echo "Error: Email '$student_email' is alread in use."
-            else
-                break
-            fi
-        fi
-    done
+    student_email=$(get_student_email)
 
     local student_year
-    while true
-    do
-        read -r -p "Enter student's academic year(1-6): " student_year
-
-        if valid_year "$student_year"
-        then
-            break
-        fi
-    done
+    student_year=$(get_student_year)
 
     {
         echo "ID=$student_id"
@@ -115,28 +61,35 @@ add_student() {
     } > "$STUDENTS_DIR/${student_id}.stu"
 
     echo ""
-    echo "Student '$student_name' (ID: $student_id) added successfully!"
+    echo "Student added successfully!"
+    echo "ID    : $student_id"
+    echo "Name  : $student_name"
+    echo "Email : $student_email"
+    echo "Year  : $student_year"
 }
-
 
 list_students() {
     clear
     echo "===================================="
     echo " List Students "
     echo "===================================="
+    echo ""
 
     show_students || return
+    echo ""
 
+    local total
+    total=$(ls "$STUDENTS_DIR"/*.stu 2>/dev/null | wc -l)
+    echo "Total Students: $total"
 }
-
 
 update_student() {
     clear
     echo "=========================="
     echo " Update Student "
     echo "=========================="
-
     echo ""
+
     echo "Available Students:"
     echo "-------------------"
 
@@ -144,99 +97,69 @@ update_student() {
     echo ""
 
     local student_id
-
-    while true
-    do
-        read -r -p "Enter Student ID: " student_id
-
-        if [[ -f "$STUDENTS_DIR/${student_id}.stu" ]]
-        then
-            break
-        else
-            echo "Error: Student ID '$student_id' not found."
-        fi
-    done
+    student_id=$(get_existing_student_id)
 
     local file="$STUDENTS_DIR/${student_id}.stu"
 
     echo ""
     echo "Current Data:"
-    awk -F= '
-        /^ID=/{print "ID    : " $2}
-        /^NAME=/{print "Name  : " $2}
-        /^EMAIL=/{print "Email : " $2}
-        /^YEAR=/{print "Year  : " $2}
-    ' "$file"
+    display_student "$file"
 
-    echo ""
-    echo "What do you want to update?"
-    echo "1) Name"
-    echo "2) Email"
-    echo "3) Year"
-    echo "b) Back"
+    while true
+    do
+        echo ""
+        echo "What do you want to update?"
+        echo "1) Name"
+        echo "2) Email"
+        echo "3) Year"
+        echo "b) Back"
 
-    read -r -p "Enter your choice: " choice
+        read -r -p "Enter your choice: " choice
 
-    case "$choice" in
-        1)
-            local new_name
-            while true
-            do
-                read -r -p "Enter new name: " new_name
+        case "$choice" in
+            1)
+                local new_name
+                new_name=$(get_student_name)
 
-                if valid_name "$new_name"
-                then
-                    break
-                fi
-            done
+                sed -i "s/^NAME=.*/NAME=$new_name/" "$file"
+                echo "Name updated successfully!"
+                echo ""
 
-            sed -i "s/^NAME=.*/NAME=$new_name/" "$file"
-            echo "Name updated successfully!" ;;
+                echo "Updated Data:"
+                display_student "$file"
+                break ;;
 
-        2)
-            local new_email
-            while true
-            do
-                read -r -p "Enter new email: " new_email
+            2)
+                local new_email
+                new_email=$(get_student_email "$student_id")
 
-                new_email="$(echo "$new_email" | xargs)"
-                new_email="${new_email,,}"
+                sed -i "s/^EMAIL=.*/EMAIL=$new_email/" "$file"
+                echo "Email updated successfully!"
+                echo ""
 
-                if valid_email "$new_email"
-                then
-                    if grep -qrF "EMAIL=$new_email" "$STUDENTS_DIR"
-                    then
-                        echo "Error: Email already exists."
-                    else
-                        break
-                    fi
-                fi
-            done
+                echo "Updated Data:"
+                display_student "$file"
+                break ;;
 
-            sed -i "s/^EMAIL=.*/EMAIL=$new_email/" "$file"
-            echo "Email updated successfully!" ;;
+            3)
+                local new_year
+                new_year=$(get_student_year)
 
-        3)
-            local new_year
-            while true
-            do
-                read -r -p "Enter new year (1-6): " new_year
+                sed -i "s/^YEAR=.*/YEAR=$new_year/" "$file"
+                echo "Year updated successfully!"
+                echo ""
 
-                if valid_year "$new_year"
-                then
-                    break
-                fi
-            done
+                echo "Updated Data:"
+                display_student "$file"
+                break ;;
 
-            sed -i "s/^YEAR=.*/YEAR=$new_year/" "$file"
-            echo "Year updated successfully!" ;;
+            b)
+                return ;;
 
-        b)
-            return ;;
-
-        *)
-            echo "Invalid choice!" ;;
-    esac
+            *)
+                echo "Invalid choice!" ;;
+        esac
+    done
 }
 
 
@@ -245,8 +168,8 @@ delete_student() {
     echo "=========================="
     echo " Delete Student "
     echo "=========================="
-
     echo ""
+
     echo "Available Students:"
     echo "-------------------"
 
@@ -254,28 +177,13 @@ delete_student() {
     echo ""
 
     local student_id
-
-    while true
-    do
-        read -r -p "Enter Student ID: " student_id
-        if [[ -f "$STUDENTS_DIR/${student_id}.stu" ]]
-        then
-            break
-        else
-            echo "Error: Student ID '$student_id' not found."
-        fi
-    done
+    student_id=$(get_existing_student_id)
 
     local file="$STUDENTS_DIR/${student_id}.stu"
 
     echo ""
     echo "Student Data:"
-    awk -F= '
-        /^ID=/{print "ID    : " $2}
-        /^NAME=/{print "Name  : " $2}
-        /^EMAIL=/{print "Email : " $2}
-        /^YEAR=/{print "Year  : " $2}
-    ' "$file"
+    display_student "$file"
 
     echo ""
     local confirm
@@ -287,7 +195,26 @@ delete_student() {
         case "$confirm" in
             y|Y)
                 rm "$file"
+
+                local deleted_grades=0
+
+                for grade_file in "$GRADES_DIR"/*.grd
+                do
+                    [[ -f "$grade_file" ]] || continue
+
+                    if grep -q "^${student_id}|" "$grade_file"
+                    then
+                        sed -i "/^${student_id}|/d" "$grade_file"
+                        deleted_grades=$((deleted_grades + 1))
+                    fi
+                done
+
                 echo "Student deleted successfully!"
+
+                if [[ "$deleted_grades" -gt 0 ]]
+                then
+                    echo "($deleted_grades grade records also removed)"
+                fi
                 return ;;
             n|N)
                 echo "Operation cancelled."
