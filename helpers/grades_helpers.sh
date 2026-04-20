@@ -20,11 +20,11 @@ is_valid_score() {
 
     if [[ -z "$score" ]]
     then
-        echo "Error: Score cannot be empty."
+        echo "Error: Score cannot be empty." >&2
         return 1
     elif [[ ! "$score" =~ ^[0-9]+(\.[0-9]+)?$ ]]
     then
-        echo "Error: Score must be a number (e.g 85 or 92.5)."
+        echo "Error: Score must be a number (e.g 85 or 92.5)." >&2
         return 1
     fi
 
@@ -38,7 +38,7 @@ is_valid_score() {
 
     if [[ "$valid_range" != "yes" ]]
     then
-        echo "Error: Score must be between 0.0 and 100.0."
+        echo "Error: Score must be between 0.0 and 100.0." >&2
         return 1
     fi
 

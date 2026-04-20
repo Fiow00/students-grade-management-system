@@ -1,11 +1,3 @@
-# =========================================
-# Subjects Module
-# Handles all subject-related operations:
-# - Add
-# - List
-# - Update
-# - Delete
-# =========================================
 manage_subjects() {
     while true
     do
@@ -42,52 +34,22 @@ add_subject() {
     echo "=========================="
     echo " Add Subject "
     echo "=========================="
+    echo ""
+
+    echo "Available Subjects:"
+    echo "-------------------"
+
+    show_subjects
+    echo ""
 
     local subject_code
+    subject_code=$(get_subject_code)
 
-    # get subject code
-    while true
-    do
-        read -r -p "Enter Subject Code (e.g CS101, MATH203): " subject_code
-
-        if is_valid_code "$subject_code"
-        then
-            subject_code="${subject_code^^}"
-
-            if [[ -f "$SUBJECTS_DIR/${subject_code}.sub" ]]
-            then
-                echo "Error: Subject code '$subject_code' already exists."
-            else
-                break
-            fi
-        fi
-    done
-
-    # get subject code
     local subject_name
+    subject_name=$(get_subject_name)
 
-    while true
-    do
-        read -r -p "Enter Subject Name: " subject_name
-
-        if is_valid_subject_name "$subject_name"
-        then
-            break
-        fi
-    done
-
-    # get credit hours
     local subject_credits
-
-    while true
-    do
-        read -r -p "Enter Credit Hours (1-6): " subject_credits
-
-        if is_valid_credits "$subject_credits"
-        then
-            break
-        fi
-    done
+    subject_credits=$(get_subject_credits)
 
     {
         echo "CODE=$subject_code"
@@ -96,8 +58,10 @@ add_subject() {
     } > "$SUBJECTS_DIR/${subject_code}.sub"
 
     echo ""
-    echo "Subject '$subject_name' ($subject_code) added successfully!"
-
+    echo "Subject added successfully!"
+    echo "Code    : $subject_code"
+    echo "Name    : $subject_name"
+    echo "Credits : $subject_credits"
 }
 
 
@@ -109,7 +73,11 @@ list_subjects() {
     echo ""
 
     show_subjects || return
+    echo ""
 
+    local total
+    total=$(ls "$SUBJECTS_DIR"/*.sub 2>/dev/null | wc -l)
+    echo "Total Subjects: $total"
 }
 
 
@@ -118,8 +86,8 @@ update_subject() {
     echo "==========================="
     echo " Update Subject "
     echo "==========================="
-
     echo ""
+
     echo "Available Subjects:"
     echo "-------------------"
 
@@ -127,41 +95,19 @@ update_subject() {
     echo ""
 
     local subject_code
-
-    while true
-    do
-        read -r -p "Enter Subject Code: " subject_code
-
-        subject_code="${subject_code^^}"
-
-        if [[ -f "$SUBJECTS_DIR/${subject_code}.sub" ]]
-        then
-            break
-        else
-            echo "Error: Subject code '$subject_code' not found."
-        fi
-    done
+    subject_code=$(get_existing_subject_code)
 
     local file="$SUBJECTS_DIR/${subject_code}.sub"
 
     echo ""
-    echo "Current Data: "
-    awk -F= '
-        /^CODE=/{
-            print "Code    : " $2
-        }
-        /^NAME=/{
-            print "Name    : " $2
-        }
-        /^CREDITS=/{
-            print "Credits : " $2
-        }
-    ' "$file"
+    echo "Current Data:"
+
+    display_subject "$file"
 
     while true
     do
         echo ""
-        echo "What do you want to update? "
+        echo "What do you want to update?"
         echo "1) Name"
         echo "2) Credits"
         echo "b) Back"
@@ -171,35 +117,26 @@ update_subject() {
         case "$choice" in
             1)
                 local new_name
-
-                while true
-                do
-                    read -r -p "Enter new name: " new_name
-
-                    if is_valid_subject_name "$new_name"
-                    then
-                        break
-                    fi
-                done
+                new_name=$(get_subject_name)
 
                 sed -i "s/^NAME=.*/NAME=$new_name/" "$file"
                 echo "Name updated successfully!"
+                echo ""
+
+                echo "Updated Data:"
+                display_subject "$file"
                 break ;;
-            
+
             2)
                 local new_credits
-                while true
-                do
-                    read -r -p "Enter new credit hours (1-6): " new_credits
-
-                    if is_valid_credits "$new_credits"
-                    then
-                        break
-                    fi
-                done
+                new_credits=$(get_subject_credits)
 
                 sed -i "s/^CREDITS=.*/CREDITS=$new_credits/" "$file"
                 echo "Credits updated successfully!"
+                echo ""
+
+                echo "Updated Data:"
+                display_subject "$file"
                 break ;;
 
             b)
@@ -209,55 +146,30 @@ update_subject() {
                 echo "Invalid choice! Please enter 1, 2 or b." ;;
         esac
     done
-
 }
-
 
 delete_subject() {
     clear
     echo "============================"
     echo " Delete Subject "
     echo "============================"
-
     echo ""
-    echo "Available Subjects: "
-    echo "--------------------"
+
+    echo "Available Subjects:"
+    echo "-------------------"
 
     show_subjects || return
     echo ""
 
     local subject_code
-
-    while true
-    do
-        read -r -p "Enter Subject Code: " subject_code
-
-        subject_code="${subject_code^^}"
-
-        if [[ -f "$SUBJECTS_DIR/${subject_code}.sub" ]]
-        then
-            break
-        else
-            echo "Error: Subject code '$subject_code' not found."
-        fi
-    done
+    subject_code=$(get_existing_subject_code)
 
     local file="$SUBJECTS_DIR/${subject_code}.sub"
 
     echo ""
-    echo "Subject Data: "
-    awk -F= '
-        /^CODE=/{
-            print "Code    : " $2
-        }
-        /^NAME=/{
-            print "Name    : " $2
-        }
-        /^CREDITS=/{
-            print "Credits : " $2
-        }
-    ' "$file"
+    echo "Subject Data:"
 
+    display_subject "$file"
     echo ""
 
     local confirm
@@ -265,6 +177,7 @@ delete_subject() {
     while true
     do
         read -r -p "Are you sure you want to delete this subject? (y/n): " confirm
+
         case "$confirm" in
             y|Y)
                 rm "$file"
@@ -274,16 +187,14 @@ delete_subject() {
                     rm "$GRADES_DIR/${subject_code}.grd"
                     echo "Related grade file also deleted."
                 fi
+
                 echo "Subject deleted successfully!"
                 return ;;
-
             n|N)
                 echo "Operation cancelled."
                 return ;;
-
             *)
                 echo "Invalid choice! Please enter y or n." ;;
         esac
     done
-
 }

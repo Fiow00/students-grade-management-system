@@ -38,7 +38,7 @@ assign_grade() {
     echo "========================="
 
     echo ""
-    echo "Avilable Subjects: "
+    echo "Available Subjects: "
     echo "-------------------"
 
     show_subjects || return
@@ -56,7 +56,7 @@ assign_grade() {
         then
             break
         else
-            echo "Eror: Subject code '$subject_code' not found."
+            echo "Error: Subject code '$subject_code' not found."
         fi
     done
 
@@ -134,7 +134,7 @@ update_grade() {
     echo "========================"
 
     echo ""
-    echo "Avialable Subjects:"
+    echo "Available Subjects:"
     echo "-------------------"
 
     show_subjects || return
@@ -186,6 +186,14 @@ update_grade() {
     while true
     do
         read -r -p "Enter New Score (0.0 - 100.0): " new_score
+
+        new_score="${new_score#"${new_score%%[!0]*}"}"
+        new_score="${new_score:-0}"
+
+        if [[ "$new_score" == .* ]]
+        then
+            new_score="0${new_score}"
+        fi
 
         if is_valid_score "$new_score"
         then
@@ -409,7 +417,6 @@ view_grades_by_student() {
                 subject_code="${grade_file##*/}"
                 subject_code="${subject_code%.grd}"
 
-                local subject_code
                 subject_name=$(
                     awk -F= '
                         /^NAME=/{print $2}
