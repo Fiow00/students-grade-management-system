@@ -155,6 +155,9 @@ get_subject_credits() {
     do
         read -r -p "Enter Credit Hours (1-6): " subject_credits
 
+        subject_credits="${subject_credits#"${subject_credits%%[!0]*}"}"
+        subject_credits="${subject_credits:-1}"
+
         if is_valid_credits "$subject_credits"
         then
             break
