@@ -331,7 +331,6 @@ failing_students() {
         local student_id=$(awk -F= '/^ID=/{print $2}' "$student_file")
         local student_name=$(awk -F= '/^NAME=/{print $2}' "$student_file")
 
-       
         for grade_file in "$GRADES_DIR"/*.grd
         do
             [[ -f "$grade_file" ]] || continue
@@ -359,16 +358,21 @@ failing_students() {
     echo "Failing Students"
     echo "------------------------------------------------------------"
 
-    awk 'BEGIN {
-        printf "%-12s %-25s %-15s\n", "Student ID", "Name", "Subject Code"
-    }'
+    if [[ ! -s "$temp_file" ]]
+    then
+        echo "No failing students found."
+    else
+        awk 'BEGIN {
+            printf "%-12s %-25s %-15s\n", "Student ID", "Name", "Subject Code"
+        }'
 
-    echo "------------------------------------------------------------"
+        echo "------------------------------------------------------------"
 
-    sort -t'|' -k1,1 "$temp_file" | \
-    awk -F'|' '{
-        printf "%-12s %-25s %-15s\n", $1, $2, $3
-    }'
+        sort -t'|' -k1,1 "$temp_file" | \
+        awk -F'|' '{
+            printf "%-12s %-25s %-15s\n", $1, $2, $3
+        }'
+    fi
 
     rm -f "$temp_file"
 }
