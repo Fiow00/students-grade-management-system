@@ -31,7 +31,7 @@ valid_id() {
     then
         echo "Error: ID must be numeric and up to 10 digits." >&2
         return 1
-    elif [[ "$id" -eq 0 ]]
+    elif [[ "$id" =~ ^0+$ ]]
     then
         echo "Error: Student Id cannot be zero." >&2
         return 1
@@ -195,6 +195,9 @@ get_student_year() {
     while true
     do
         read -r -p "Enter student's academic year (1-6): " student_year
+
+        student_year="${student_year#"${student_year%%[!0]*}"}"
+        student_year="${student_year:-1}"
 
         if valid_year "$student_year"
         then

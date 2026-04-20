@@ -323,9 +323,6 @@ view_grades_by_subject() {
         if [[ ! -f "$SUBJECTS_DIR/${subject_code}.sub" ]]
         then
             echo "Error: Subject code '$subject_code' not found."
-        elif [[ ! -f "$GRADES_DIR/${subject_code}.grd" ]]
-        then
-            echo "Error: No grades found for subject '$subject_code'."
         else
             break
         fi
@@ -344,6 +341,12 @@ view_grades_by_subject() {
     echo ""
     echo "Grades for '$subject_name' ($subject_code):"
     echo "-------------------------------------------"
+
+    if [[ ! -s "$file" ]]
+    then
+        echo "No grades found for this subject."
+        return
+    fi
 
     {
         echo "Student ID|Student Name|Score|Letter"
@@ -404,6 +407,23 @@ view_grades_by_student() {
 
     local found=0
 
+    for grade_file in "$GRADES_DIR"/*.grd
+    do
+        [[ -f "$grade_file" ]] || continue
+
+        if grep -q "^${student_id}|" "$grade_file"
+        then
+            found=1
+            break
+        fi
+    done
+
+    if [[ "$found" -eq 0 ]]
+    then
+        echo "No grades found for this student."
+        return
+    fi
+
     {
         echo "Subject Code|Subject Name|Score|Letter"
 
@@ -413,7 +433,6 @@ view_grades_by_student() {
 
             if grep -q "^${student_id}|" "$grade_file"
             then
-                found=1
                 subject_code="${grade_file##*/}"
                 subject_code="${subject_code%.grd}"
 
@@ -433,9 +452,4 @@ view_grades_by_student() {
             fi
         done
     } | column -t -s '|'
-
-    if [[ "$found" -eq 0 ]]
-    then
-        echo "No grades found for this student."
-    fi
 }
