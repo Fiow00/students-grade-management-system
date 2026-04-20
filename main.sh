@@ -1,18 +1,24 @@
 #!/bin/bash
 
-trap 'echo " Use q to exit."' INT
+DATA_DIR="sgms_data"
 
-manage_students() {
-    echo "Manage students is chosen"
-}
+mkdir -p "$DATA_DIR"
 
-manage_subjects() {
-    echo "Manage subjects is chosen"
-}
+STUDENTS_DIR="$DATA_DIR/students"
+SUBJECTS_DIR="$DATA_DIR/subjects"
+GRADES_DIR="$DATA_DIR/grades"
 
-manage_grades() {
-    echo "Manage grades is chosen"
-}
+mkdir -p "$STUDENTS_DIR" "$SUBJECTS_DIR" "$GRADES_DIR"
+
+source helpers/students_helpers.sh || { echo "Error loading students helpers"; exit 1; }
+source helpers/subjects_helpers.sh || { echo "Error loading subjects helpers"; exit 1; }
+source helpers/grades_helpers.sh || { echo "Error loading grades helpers"; exit 1; }
+
+source modules/students.sh || { echo "Error loading students module"; exit 1; }
+source modules/subjects.sh || { echo "Error loading subjects module"; exit 1; }
+source modules/grades.sh || { echo "Error loading grades module"; exit 1; }
+source modules/reports.sh || { echo "Error loading reports module"; exit 1; }
+
 
 while true
 do
@@ -23,16 +29,31 @@ do
     echo "1) Manage Students"
     echo "2) Manage Subjects"
     echo "3) Manage Grades"
+    echo "4) Reports & Statistics"
     echo "q) Exit"
     echo ""
 
-    read -p "Enter your selection: " answer
+    read -r -p "Enter your selection: " choice
 
-    case "$answer" in
-        1) manage_students ;;
-        2) manage_subjects ;;
-        3) manage_grades ;;
-        q) echo "Exiting..."; exit 0 ;;
+    case "$choice" in
+        1) 
+            echo "Opening Students Module..."
+            sleep 0.5
+            manage_students ;;
+        2) 
+            echo "Opening Subjects Module..."
+            sleep 0.5
+            manage_subjects ;;
+        3) 
+            echo "Opening Grades Module..."
+            sleep 0.5
+            manage_grades ;;
+        4)
+            echo "Opening Reports..."
+            sleep 0.5
+            manage_reports ;;
+        q) echo "Exiting..."; sleep 0.5; exit 0 ;;
+        "") echo "Please enter a choice!" ;;
         *) echo "Invalid choice!" ;;
     esac
 
