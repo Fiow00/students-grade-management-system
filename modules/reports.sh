@@ -31,6 +31,12 @@ student_transcript() {
     echo "=============================="
     echo " Student Transcript + GPA Report "
     echo "=============================="
+    
+    echo "Available Students:"
+    echo "-------------------"
+
+    show_students || return
+    echo ""
 
     local student_id
 
