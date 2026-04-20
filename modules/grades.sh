@@ -238,9 +238,6 @@ delete_grade() {
         if [[ ! -f "$SUBJECTS_DIR/${subject_code}.sub" ]]
         then
             echo "Error: Subject code '$subject_code' not found."
-        elif [[ ! -f "$GRADES_DIR/${subject_code}.grd" ]]
-        then
-            echo "Error: No grades found for subject '$subject_code'."
         else
             break
         fi
@@ -251,6 +248,12 @@ delete_grade() {
     echo ""
     echo "Current Grades for '$subject_code':"
     echo "-----------------------------------"
+
+    if [[ ! -s "$file" ]]
+    then
+        echo "No grades found for this subject."
+        return
+    fi
 
     show_grade_file "$file" || return
     echo ""
